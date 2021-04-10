@@ -22,7 +22,7 @@ var DEFAULT_HEADERS = {
 };
 
 
-function getTranslatorComment(node) {
+function extractComment(node) {
   var comments = [];
   (node.leadingComments || []).forEach(function(commentNode) {
     var match = commentNode.value.match(/^\s*translators:\s*(.*?)\s*$/im);
@@ -52,15 +52,15 @@ module.exports = function() {
   return { visitor: {
 
     VariableDeclaration(nodePath) {
-      var translatorComment = getTranslatorComment(nodePath.node);
-      if (!translatorComment) {
+      var extractedComment = extractComment(nodePath.node);
+      if (!extractedComment) {
         return;
       }
       nodePath.node.declarations.forEach(function(declarator) {
-        var comment = getTranslatorComment(declarator);
+        var comment = extractComment(declarator);
         if (!comment) {
           var key = declarator.init.start + '|' + declarator.init.end;
-          relocatedComments[key] = translatorComment;
+          relocatedComments[key] = extractedComment;
         }
       });
     },
@@ -140,17 +140,17 @@ module.exports = function() {
           reference: fn + ':' + nodePath.node.loc.start.line,
         };
 
-        var translatorComment = getTranslatorComment(nodePath.node);
-        if (!translatorComment) {
-          translatorComment = getTranslatorComment(nodePath.parentPath);
-          if (!translatorComment) {
-            translatorComment = relocatedComments[
+        var extractedComment = extractComment(nodePath.node);
+        if (!extractedComment) {
+          extractedComment = extractComment(nodePath.parentPath);
+          if (!extractedComment) {
+            extractedComment = relocatedComments[
               nodePath.node.start + '|' + nodePath.node.end];
           }
         }
 
-        if (translatorComment) {
-          translate.comments.translator = translatorComment;
+        if (extractedComment) {
+          translate.comments.extracted = extractedComment;
         }
 
         var context = defaultContext;
